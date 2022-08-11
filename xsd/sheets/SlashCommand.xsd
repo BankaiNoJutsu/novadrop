@@ -19,6 +19,7 @@
         <xsd:attribute name="canUseWhenPolymorph" type="xsd:boolean" />
         <xsd:attribute name="command" type="xsd:string" use="required" />
         <xsd:attribute name="excludedGameModeList" type="xsd:string" />
+        <xsd:attribute name="interactionMenuName" type="xsd:string" />
         <xsd:attribute name="id" type="xsd:int" use="required" />
         <xsd:attribute name="name" type="xsd:string" />
         <xsd:attribute name="paramCount" type="xsd:int" use="required" />

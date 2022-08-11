@@ -31,6 +31,7 @@
         <xsd:attribute name="huntingZoneId" type="xsd:int" use="required" />
         <xsd:attribute name="range" type="xsd:int" use="required" />
         <xsd:attribute name="templateId" type="xsd:int" use="required" />
+        <xsd:attribute name="layer" type="xsd:int" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="BossGage_BossList_Boss_Effect">

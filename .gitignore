@@ -4,3 +4,4 @@
 /pkg/feed/*.nupkg
 bin
 obj
+xsd

@@ -7,7 +7,6 @@
             elementFormDefault="qualified">
     <xsd:complexType name="EnchantRenewal">
         <xsd:sequence>
-            <xsd:element name="EnchantAdditiveQuestionTooltip" type="EnchantRenewal_EnchantAdditiveQuestionTooltip" maxOccurs="unbounded" />
             <xsd:element name="EnchantQuestionTooltip" type="EnchantRenewal_EnchantQuestionTooltip" />
             <xsd:element name="EnchantTooltip" type="EnchantRenewal_EnchantTooltip" />
             <xsd:element name="EvolutionQuestionTooltip" type="EnchantRenewal_EvolutionQuestionTooltip" />
@@ -17,19 +16,6 @@
         </xsd:sequence>
     </xsd:complexType>
 
-    <xsd:complexType name="EnchantRenewal_EnchantAdditiveQuestionTooltip">
-        <xsd:sequence>
-            <xsd:element name="Message" type="EnchantRenewal_EnchantAdditiveQuestionTooltip_Message" maxOccurs="unbounded" />
-        </xsd:sequence>
-
-        <xsd:attribute name="title" type="xsd:string" use="required" />
-        <xsd:attribute name="type" type="xsd:string" use="required" />
-    </xsd:complexType>
-
-    <xsd:complexType name="EnchantRenewal_EnchantAdditiveQuestionTooltip_Message">
-        <xsd:attribute name="string" type="xsd:string" use="required" />
-    </xsd:complexType>
-
     <xsd:complexType name="EnchantRenewal_EnchantQuestionTooltip">
         <xsd:sequence>
             <xsd:element name="Message" type="EnchantRenewal_EnchantQuestionTooltip_Message" maxOccurs="unbounded" />
@@ -37,8 +23,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EnchantQuestionTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EnchantTooltip">
@@ -48,8 +34,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EnchantTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EvolutionQuestionTooltip">
@@ -59,8 +45,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EvolutionQuestionTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EvolutionTooltip">
@@ -70,8 +56,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_EvolutionTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_RepairQuestionTooltip">
@@ -81,8 +67,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_RepairQuestionTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_RepairTooltip">
@@ -92,8 +78,8 @@
     </xsd:complexType>
 
     <xsd:complexType name="EnchantRenewal_RepairTooltip_Message">
-        <xsd:attribute name="link" type="xsd:string" use="required" />
         <xsd:attribute name="string" type="xsd:string" use="required" />
+        <xsd:attribute name="link" type="xsd:string" use="required" />
     </xsd:complexType>
 
     <xsd:element name="EnchantRenewal" type="EnchantRenewal" />

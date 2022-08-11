@@ -100,6 +100,7 @@
         <xsd:attribute name="canGetBuff" type="xsd:boolean" />
         <xsd:attribute name="friendOfPlayer" type="xsd:boolean" />
         <xsd:attribute name="villager" type="xsd:boolean" />
+        <xsd:attribute name="canbeattacked" type="xsd:boolean" />
     </xsd:complexType>
 
     <xsd:complexType name="TerritoryData_TerritoryGroup_TerritoryList_Territory_Party_Npc_PatrolList">

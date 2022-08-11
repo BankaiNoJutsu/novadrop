@@ -22,6 +22,7 @@
     <xsd:complexType name="CustomizePadButtonData_CustomizeGroup_CustomizeKey">
         <xsd:attribute name="command" type="xsd:string" />
         <xsd:attribute name="id" type="xsd:int" use="required" />
+        <xsd:attribute name="name" type="xsd:string" />
         <xsd:attribute name="keymapName" type="xsd:string" use="required" />
         <xsd:attribute name="uiName" type="xsd:string" />
     </xsd:complexType>

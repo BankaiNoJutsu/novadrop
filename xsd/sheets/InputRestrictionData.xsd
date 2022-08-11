@@ -24,7 +24,8 @@
 
     <xsd:complexType name="InputRestrictionData_CharacterSetRestriction_CharacterSet">
         <xsd:sequence>
-            <xsd:element name="Range" type="InputRestrictionData_CharacterSetRestriction_CharacterSet_Range" maxOccurs="unbounded" />
+            <xsd:element name="Binary" type="InputRestrictionData_CharacterSetRestriction_CharacterSet_Binary" minOccurs="0" maxOccurs="unbounded" />
+            <xsd:element name="Range" type="InputRestrictionData_CharacterSetRestriction_CharacterSet_Range" minOccurs="0" maxOccurs="unbounded" />
         </xsd:sequence>
 
         <xsd:attribute name="name" type="xsd:string" use="required" />
@@ -35,6 +36,15 @@
         <xsd:attribute name="to" type="xsd:string" use="required" />
     </xsd:complexType>
 
+    <xsd:complexType name="InputRestrictionData_CharacterSetRestriction_CharacterSet_Binary">
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute name="from" type="xsd:string" use="required" />
+                <xsd:attribute name="to" type="xsd:string" use="required" />
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
     <xsd:complexType name="InputRestrictionData_Enabled">
         <xsd:attribute name="client" type="xsd:boolean" use="required" />
         <xsd:attribute name="server" type="xsd:boolean" use="required" />
@@ -42,7 +52,7 @@
 
     <xsd:complexType name="InputRestrictionData_RegularExpressions">
         <xsd:sequence>
-            <xsd:element name="RegularExpression" type="InputRestrictionData_RegularExpressions_RegularExpression" maxOccurs="unbounded" />
+            <xsd:element name="RegularExpression" type="InputRestrictionData_RegularExpressions_RegularExpression" minOccurs="0" maxOccurs="unbounded" />
         </xsd:sequence>
     </xsd:complexType>
 
@@ -88,6 +98,7 @@
         <xsd:attribute name="include" type="xsd:string" />
         <xsd:attribute name="max" type="xsd:int" />
         <xsd:attribute name="min" type="xsd:int" />
+        <xsd:attribute name="notmixed" type="xsd:string" />
         <xsd:attribute name="onFail" type="xsd:string" use="required" />
         <xsd:attribute name="replace" type="xsd:boolean" />
         <xsd:attribute name="table" type="xsd:string" />

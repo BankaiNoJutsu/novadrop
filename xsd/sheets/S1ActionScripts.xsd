@@ -62,6 +62,10 @@
         <xsd:attribute name="name" type="xsd:string" />
         <xsd:attribute name="objectId" type="xsd:int" />
         <xsd:attribute name="on" type="xsd:boolean" />
+        <xsd:attribute name="complete" type="xsd:boolean" />
+        <xsd:attribute name="dPadTextId" type="xsd:int" />
+        <xsd:attribute name="keyTextId" type="xsd:int" />
+        <xsd:attribute name="xPadTextId" type="xsd:int" />
         <xsd:attribute name="param" type="xsd:string" />
         <xsd:attribute name="pitch" type="xsd:float" />
         <xsd:attribute name="playAttachedEffect" type="xsd:boolean" />

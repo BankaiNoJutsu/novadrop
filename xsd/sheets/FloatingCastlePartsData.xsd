@@ -5,7 +5,89 @@
             targetNamespace="https://vezel.dev/novadrop/dc/FloatingCastlePartsData"
             xsi:schemaLocation="https://vezel.dev/novadrop/dc ../DataCenter.xsd"
             elementFormDefault="qualified">
-    <xsd:complexType name="FloatingCastlePartsData" />
+    <xsd:complexType name="FloatingCastlePartsData">
+        <xsd:sequence>
+            <xsd:element name="Parts" type="FloatingCastlePartsData_Parts" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts">
+        <xsd:sequence>
+            <xsd:element name="Appearance" type="FloatingCastlePartsData_Parts_Appearance" />
+            <xsd:element name="Material" type="FloatingCastlePartsData_Parts_Material" minOccurs="0" maxOccurs="unbounded" />
+            <xsd:element name="Music" type="FloatingCastlePartsData_Parts_Music" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+
+        <xsd:attribute name="id" type="xsd:int" use="required" />
+        <xsd:attribute name="slot" type="xsd:string" use="required" />
+        <xsd:attribute name="grade" type="xsd:int" use="required" />
+        <xsd:attribute name="position" type="xsd:string" use="required" />
+        <xsd:attribute name="location" type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Appearance">
+        <xsd:sequence>
+            <xsd:element name="Mesh" type="FloatingCastlePartsData_Parts_Appearance_Mesh" maxOccurs="unbounded" />
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Appearance_Mesh">
+        <xsd:sequence>
+            <xsd:element name="Effect" type="FloatingCastlePartsData_Parts_Appearance_Mesh_Effect" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+
+        <xsd:attribute name="id" type="xsd:int" use="required" />
+        <xsd:attribute name="type" type="xsd:string" use="required" />
+        <xsd:attribute name="animSet" type="xsd:string" />
+        <xsd:attribute name="animName" type="xsd:string" />
+        <xsd:attribute name="resName" type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Appearance_Mesh_Effect">
+        <xsd:sequence>
+            <xsd:element name="Material" type="FloatingCastlePartsData_Parts_Appearance_Mesh_Effect_Material" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+
+        <xsd:attribute name="effectId" type="xsd:int" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Appearance_Mesh_Effect_Material">
+        <xsd:attribute name="color" type="xsd:string" use="required" />
+        <xsd:attribute name="emitterName" type="xsd:string" use="required" />
+        <xsd:attribute name="paramName" type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Material">
+        <xsd:sequence>
+            <xsd:element name="Default" type="FloatingCastlePartsData_Parts_Material_Default" minOccurs="0" maxOccurs="unbounded" />
+            <xsd:element name="Despawn" type="FloatingCastlePartsData_Parts_Material_Despawn" minOccurs="0" maxOccurs="unbounded" />
+            <xsd:element name="Spawn" type="FloatingCastlePartsData_Parts_Material_Spawn" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Material_Default">
+        <xsd:attribute name="color" type="xsd:string" use="required" />
+        <xsd:attribute name="paramName" type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Material_Despawn">
+        <xsd:attribute name="duration" type="xsd:int" use="required" />
+        <xsd:attribute name="paramName" type="xsd:string" use="required" />
+        <xsd:attribute name="endValue" type="xsd:int" use="required" />
+        <xsd:attribute name="startValue" type="xsd:int" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Material_Spawn">
+        <xsd:attribute name="duration" type="xsd:int" use="required" />
+        <xsd:attribute name="paramName" type="xsd:string" use="required" />
+        <xsd:attribute name="endValue" type="xsd:int" use="required" />
+        <xsd:attribute name="startValue" type="xsd:int" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="FloatingCastlePartsData_Parts_Music">
+        <xsd:attribute name="priority" type="xsd:int" use="required" />
+        <xsd:attribute name="sound" type="xsd:string" use="required" />
+    </xsd:complexType>
 
     <xsd:element name="FloatingCastlePartsData" type="FloatingCastlePartsData" />
 </xsd:schema>
