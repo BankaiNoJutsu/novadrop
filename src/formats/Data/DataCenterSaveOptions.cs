@@ -23,7 +23,7 @@ public sealed class DataCenterSaveOptions
 
     public DataCenterSaveOptions WithRevision(int revision)
     {
-        _ = revision >= 0 ? true : throw new ArgumentOutOfRangeException(nameof(revision));
+        Check.Range(revision >= 0, revision);
 
         var options = Clone();
 
@@ -34,7 +34,7 @@ public sealed class DataCenterSaveOptions
 
     public DataCenterSaveOptions WithCompressionLevel(CompressionLevel compressionLevel)
     {
-        _ = Enum.IsDefined(compressionLevel) ? true : throw new ArgumentOutOfRangeException(nameof(compressionLevel));
+        Check.Enum(compressionLevel);
 
         var options = Clone();
 
@@ -43,9 +43,9 @@ public sealed class DataCenterSaveOptions
         return options;
     }
 
-    public DataCenterSaveOptions WithKey(ReadOnlySpan<byte> key)
+    public DataCenterSaveOptions WithKey(scoped ReadOnlySpan<byte> key)
     {
-        _ = key.Length == DataCenter.LatestKey.Length ? true : throw new ArgumentException(null, nameof(key));
+        Check.Argument(key.Length == DataCenter.LatestKey.Length, nameof(key));
 
         var options = Clone();
 
@@ -54,9 +54,9 @@ public sealed class DataCenterSaveOptions
         return options;
     }
 
-    public DataCenterSaveOptions WithIV(ReadOnlySpan<byte> iv)
+    public DataCenterSaveOptions WithIV(scoped ReadOnlySpan<byte> iv)
     {
-        _ = iv.Length == DataCenter.LatestIV.Length ? true : throw new ArgumentException(null, nameof(iv));
+        Check.Argument(iv.Length == DataCenter.LatestIV.Length, nameof(iv));
 
         var options = Clone();
 

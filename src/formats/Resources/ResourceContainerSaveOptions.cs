@@ -12,9 +12,9 @@ public sealed class ResourceContainerSaveOptions
         };
     }
 
-    public ResourceContainerSaveOptions WithKey(ReadOnlySpan<byte> key)
+    public ResourceContainerSaveOptions WithKey(scoped ReadOnlySpan<byte> key)
     {
-        _ = key.Length == ResourceContainer.LatestKey.Length ? true : throw new ArgumentException(null, nameof(key));
+        Check.Argument(key.Length == ResourceContainer.LatestKey.Length, nameof(key));
 
         var options = Clone();
 

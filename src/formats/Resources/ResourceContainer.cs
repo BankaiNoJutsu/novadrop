@@ -39,18 +39,18 @@ public sealed class ResourceContainer
         return new();
     }
 
-    public static async Task<ResourceContainer> LoadAsync(
+    public static Task<ResourceContainer> LoadAsync(
         Stream stream, ResourceContainerLoadOptions options, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        _ = stream is { CanRead: true, CanSeek: true } ? true : throw new ArgumentException(null, nameof(stream));
-        ArgumentNullException.ThrowIfNull(options);
+        Check.Null(stream);
+        Check.Argument(stream is { CanRead: true, CanSeek: true }, stream);
+        Check.Null(options);
 
-        var rc = new ResourceContainer();
-
-        await Task.Run(
+        return Task.Run(
             async () =>
             {
+                var rc = new ResourceContainer();
+
                 stream.Position = stream.Length - FooterLength;
 
                 var footerReader = new StreamBinaryReader(stream);
@@ -58,12 +58,10 @@ public sealed class ResourceContainer
                 var dirSize = await footerReader.ReadInt32Async(cancellationToken).ConfigureAwait(false);
                 var magic = await footerReader.ReadUInt32Async(cancellationToken).ConfigureAwait(false);
 
-                if (dirSize < 0)
-                    throw new InvalidDataException($"Directory size {dirSize} is negative.");
-
-                if (magic != Magic)
-                    throw new InvalidDataException(
-                        $"Unsupported resource container magic value 0x{magic:x8} (expected 0x{Magic:x8}).");
+                Check.Data(dirSize >= 0, $"Directory size {dirSize} is negative.");
+                Check.Data(
+                    magic == Magic,
+                    $"Unsupported resource container magic value 0x{magic:x8} (expected 0x{Magic:x8}).");
 
                 stream.Position = stream.Length - FooterLength - dirSize;
 
@@ -83,18 +81,15 @@ public sealed class ResourceContainer
                         var offset = await dirReader.ReadInt32Async(cancellationToken).ConfigureAwait(false);
                         var name = await dirReader.ReadStringAsync(cancellationToken).ConfigureAwait(false);
 
-                        if (offset < 0)
-                            throw new InvalidDataException($"Entry offset {offset} is negative.");
-
-                        if (length < 0)
-                            throw new InvalidDataException($"Entry length {length} is negative.");
+                        Check.Data(offset >= 0, $"Entry offset {offset} is negative.");
+                        Check.Data(length >= 0, $"Entry length {length} is negative.");
 
                         entries.Add((name, offset, length));
                     }
 
-                    if (options.Strict && dirReader.Progress != dirSize)
-                        throw new InvalidDataException(
-                            $"Directory size {dirSize} does not match actual size {dirReader.Progress}.");
+                    Check.Data(
+                        !options.Strict || dirReader.Progress == dirSize,
+                        $"Directory size {dirSize} does not match actual size {dirReader.Progress}.");
                 }
 
                 foreach (var (name, offset, length) in entries)
@@ -114,23 +109,23 @@ public sealed class ResourceContainer
                         Data = data,
                     };
 
-                    if (!rc._entries.TryAdd(name, entry))
-                        throw new InvalidDataException($"Entry named '{name}' was already recorded earlier.");
+                    Check.Data(
+                        rc._entries.TryAdd(name, entry), $"Entry named '{name}' was already recorded earlier.");
                 }
 
                 stream.Position = stream.Length;
-            },
-            cancellationToken).ConfigureAwait(false);
 
-        return rc;
+                return rc;
+            },
+            cancellationToken);
     }
 
     public Task SaveAsync(
         Stream stream, ResourceContainerSaveOptions options, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        _ = stream.CanWrite ? true : throw new ArgumentException(null, nameof(stream));
-        ArgumentNullException.ThrowIfNull(options);
+        Check.Null(stream);
+        Check.Argument(stream.CanWrite, stream);
+        Check.Null(options);
 
         return Task.Run(
             async () =>

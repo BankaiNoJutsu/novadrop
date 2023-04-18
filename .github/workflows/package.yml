@@ -17,12 +17,12 @@ jobs:
         runs-on: windows-2022
         steps:
             - name: Clone repository
-              uses: actions/checkout@v3.0.2
+              uses: actions/checkout@v3.5.2
               with:
                   fetch-depth: 0
                   submodules: recursive
             - name: Set up .NET
-              uses: actions/setup-dotnet@v2.1.0
+              uses: actions/setup-dotnet@v3.0.3
             - name: Build project
               run: |
                   dotnet tool restore
@@ -30,15 +30,3 @@ jobs:
             - name: Upload GitHub packages
               run: |
                   dotnet gpr push pkg/feed/*.nupkg -k ${{ secrets.GITHUB_TOKEN }}
-            - name: Prune GitHub packages
-              uses: SmartsquareGmbH/delete-old-packages@v0.4.0
-              with:
-                  names: |
-                      novadrop-dc
-                      novadrop-rc
-                      novadrop-run
-                      novadrop-scan
-                      Vezel.Novadrop.Client
-                      Vezel.Novadrop.Common
-                      Vezel.Novadrop.Formats
-                  keep: 25

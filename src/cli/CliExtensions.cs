@@ -39,8 +39,7 @@ internal static class CliExtensions
         return result;
     }
 
-    public static async Task RunTaskAsync(
-        this ProgressContext context, string description, Func<Task> function)
+    public static async Task RunTaskAsync(this ProgressContext context, string description, Func<Task> function)
     {
         _ = await context.RunTaskAsync(description, async () =>
         {
@@ -55,7 +54,7 @@ internal static class CliExtensions
     {
         using var task = new ProgressTaskWrapper(context, description, goal, false);
 
-        return await function(() => task.Increment()).ConfigureAwait(false);
+        return await function(task.Increment).ConfigureAwait(false);
     }
 
     public static async Task RunTaskAsync(

@@ -32,7 +32,7 @@ internal sealed class LazyImmutableDataCenterReader : DataCenterReader
             {
                 LazyImmutableDataCenterNode node = null!;
 
-                return node = new LazyImmutableDataCenterNode(
+                return node = new(
                     parent,
                     name,
                     value,
@@ -44,14 +44,15 @@ internal sealed class LazyImmutableDataCenterReader : DataCenterReader
 
                         if (attrCount != 0)
                         {
-                            attributes = new OrderedDictionary<string, DataCenterValue>(attrCount);
+                            attributes = new(attrCount);
 
-                            ReadAttributes(raw, attributes, static (attributes, name, value) =>
-                            {
-                                if (!attributes.TryAdd(name, value))
-                                    throw new InvalidDataException(
-                                        $"Attribute named '{name}' was already recorded earlier.");
-                            });
+                            ReadAttributes(
+                                raw,
+                                attributes,
+                                static (attributes, name, value) =>
+                                    Check.Data(
+                                        attributes.TryAdd(name, value),
+                                        $"Attribute named '{name}' was already recorded earlier."));
                         }
 
                         return attributes;
@@ -62,7 +63,7 @@ internal sealed class LazyImmutableDataCenterReader : DataCenterReader
 
                         if (raw.ChildCount != 0)
                         {
-                            children = new List<DataCenterNode>(raw.ChildCount);
+                            children = new(raw.ChildCount);
 
                             ReadChildren(raw, node, children, static (children, node) => children.Add(node), default);
                         }

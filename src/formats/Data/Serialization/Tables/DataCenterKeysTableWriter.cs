@@ -16,6 +16,7 @@ internal sealed class DataCenterKeysTableWriter
         _names = names;
     }
 
+    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
     public async ValueTask WriteAsync(StreamBinaryWriter writer, CancellationToken cancellationToken)
     {
         await _keys.WriteAsync(writer, cancellationToken).ConfigureAwait(false);
@@ -27,16 +28,16 @@ internal sealed class DataCenterKeysTableWriter
 
         if (!_cache.TryGetValue(tup, out var index))
         {
-            if (_keys.Elements.Count == DataCenterConstants.KeysTableSize)
-                throw new InvalidOperationException(
-                    $"Keys table is full ({DataCenterConstants.KeysTableSize} elements).");
+            Check.Operation(
+                _keys.Elements.Count != DataCenterConstants.KeysTableSize,
+                $"Keys table is full ({DataCenterConstants.KeysTableSize} elements).");
 
             ushort GetIndex(string? value)
             {
                 return (ushort)(value != null ? _names.AddString(value).Index : 0);
             }
 
-            _keys.Elements.Add(new DataCenterRawKeys
+            _keys.Elements.Add(new()
             {
                 NameIndex1 = GetIndex(attributeName1),
                 NameIndex2 = GetIndex(attributeName2),

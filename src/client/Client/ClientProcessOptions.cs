@@ -10,31 +10,26 @@ public sealed class ClientProcessOptions
 
     public string? Language { get; private set; }
 
-    public IReadOnlyDictionary<int, ClientServerInfo> Servers { get; private set; } = null!;
+    public ImmutableSortedDictionary<int, ClientServerInfo> Servers { get; private set; } =
+        ImmutableSortedDictionary<int, ClientServerInfo>.Empty;
 
     public int LastServerId { get; private set; }
 
-    public Func<int, string[], Uri>? WebUriProvider { get; private set; }
+    public Func<int, ReadOnlyMemory<string>, Uri>? WebUriProvider { get; private set; }
 
     private ClientProcessOptions()
     {
     }
 
-    [SuppressMessage("", "CA1851")]
-    public ClientProcessOptions(
-        string fileName, string accountName, string sessionTicket, IEnumerable<ClientServerInfo> servers)
+    public ClientProcessOptions(string fileName, string accountName, string sessionTicket)
     {
-        ArgumentNullException.ThrowIfNull(fileName);
-        ArgumentNullException.ThrowIfNull(accountName);
-        ArgumentNullException.ThrowIfNull(sessionTicket);
-        ArgumentNullException.ThrowIfNull(servers);
-        _ = servers.Any() ? true : throw new ArgumentException(null, nameof(servers));
-        _ = servers.All(s => s != null) ? true : throw new ArgumentException(null, nameof(servers));
+        Check.Null(fileName);
+        Check.Null(accountName);
+        Check.Null(sessionTicket);
 
         FileName = fileName;
         AccountName = accountName;
         SessionTicket = sessionTicket;
-        Servers = servers.ToImmutableDictionary(s => s.Id);
     }
 
     private ClientProcessOptions Clone()
@@ -53,7 +48,7 @@ public sealed class ClientProcessOptions
 
     public ClientProcessOptions WithFileName(string fileName)
     {
-        ArgumentNullException.ThrowIfNull(fileName);
+        Check.Null(fileName);
 
         var options = Clone();
 
@@ -64,7 +59,7 @@ public sealed class ClientProcessOptions
 
     public ClientProcessOptions WithAccountName(string accountName)
     {
-        ArgumentNullException.ThrowIfNull(accountName);
+        Check.Null(accountName);
 
         var options = Clone();
 
@@ -75,7 +70,7 @@ public sealed class ClientProcessOptions
 
     public ClientProcessOptions WithSessionTicket(string sessionTicket)
     {
-        ArgumentNullException.ThrowIfNull(sessionTicket);
+        Check.Null(sessionTicket);
 
         var options = Clone();
 
@@ -93,23 +88,82 @@ public sealed class ClientProcessOptions
         return options;
     }
 
-    [SuppressMessage("", "CA1851")]
+    public ClientProcessOptions WithServers(params ClientServerInfo[] servers)
+    {
+        return WithServers(servers.AsEnumerable());
+    }
+
     public ClientProcessOptions WithServers(IEnumerable<ClientServerInfo> servers)
     {
-        ArgumentNullException.ThrowIfNull(servers);
-        _ = servers.Any() ? true : throw new ArgumentException(null, nameof(servers));
-        _ = servers.All(s => s != null) ? true : throw new ArgumentException(null, nameof(servers));
+        Check.Null(servers);
+        Check.All(servers, static srv => srv != null);
 
         var options = Clone();
 
-        options.Servers = servers.ToImmutableDictionary(s => s.Id);
+        options.Servers = servers.ToImmutableSortedDictionary(srv => srv.Id, srv => srv);
 
         return options;
     }
 
+    public ClientProcessOptions AddServer(ClientServerInfo server)
+    {
+        Check.Null(server);
+
+        var options = Clone();
+
+        options.Servers = Servers.Add(server.Id, server);
+
+        return options;
+    }
+
+    public ClientProcessOptions AddServers(params ClientServerInfo[] servers)
+    {
+        return AddServers(servers.AsEnumerable());
+    }
+
+    public ClientProcessOptions AddServers(IEnumerable<ClientServerInfo> servers)
+    {
+        Check.Null(servers);
+        Check.All(servers, static srv => srv != null);
+
+        var options = Clone();
+
+        options.Servers = Servers.AddRange(servers.Select(srv => KeyValuePair.Create(srv.Id, srv)));
+
+        return options;
+    }
+
+    public ClientProcessOptions RemoveServer(int id)
+    {
+        var options = Clone();
+
+        options.Servers = Servers.Remove(id);
+
+        return options;
+    }
+
+    public ClientProcessOptions RemoveServers(params int[] ids)
+    {
+        return RemoveServers(ids.AsEnumerable());
+    }
+
+    public ClientProcessOptions RemoveServers(IEnumerable<int> ids)
+    {
+        var options = Clone();
+
+        options.Servers = Servers.RemoveRange(ids);
+
+        return options;
+    }
+
+    public ClientProcessOptions ClearServers()
+    {
+        return WithServers();
+    }
+
     public ClientProcessOptions WithLastServerId(int lastServerId)
     {
-        _ = lastServerId > 0 ? true : throw new ArgumentOutOfRangeException(nameof(lastServerId));
+        Check.Range(lastServerId > 0, lastServerId);
 
         var options = Clone();
 
@@ -118,9 +172,9 @@ public sealed class ClientProcessOptions
         return options;
     }
 
-    public ClientProcessOptions WithWebUriProvider(Func<int, string[], Uri>? webUriProvider)
+    public ClientProcessOptions WithWebUriProvider(Func<int, ReadOnlyMemory<string>, Uri>? webUriProvider)
     {
-        ArgumentNullException.ThrowIfNull(webUriProvider);
+        Check.Null(webUriProvider);
 
         var options = Clone();
 

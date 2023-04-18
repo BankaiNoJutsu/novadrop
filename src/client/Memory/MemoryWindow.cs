@@ -1,6 +1,6 @@
 namespace Vezel.Novadrop.Memory;
 
-public readonly struct MemoryWindow : IEquatable<MemoryWindow>
+public readonly struct MemoryWindow : IEquatable<MemoryWindow>, IEqualityOperators<MemoryWindow, MemoryWindow, bool>
 {
     public MemoryAccessor Accessor { get; }
 
@@ -12,7 +12,7 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
 
     public MemoryWindow(MemoryAccessor accessor, NativeAddress address, nuint length)
     {
-        ArgumentNullException.ThrowIfNull(accessor);
+        Check.Null(accessor);
 
         Accessor = accessor;
         Address = address;
@@ -68,12 +68,16 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
 
     public NativeAddress ToAddress(nuint offset)
     {
-        return TryGetAddress(offset, out var addr) ? addr : throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(TryGetAddress(offset, out var addr), offset);
+
+        return addr;
     }
 
-    public unsafe nuint ToOffset(NativeAddress address)
+    public nuint ToOffset(NativeAddress address)
     {
-        return TryGetOffset(address, out var off) ? off : throw new ArgumentOutOfRangeException(nameof(address));
+        Check.Range(TryGetOffset(address, out var off), address);
+
+        return off;
     }
 
     public MemoryWindow Slice(nuint offset)
@@ -83,7 +87,7 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
 
     public MemoryWindow Slice(nuint offset, nuint length)
     {
-        _ = ContainsRange(offset, length) ? true : throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(ContainsRange(offset, length), offset);
 
         return new(Accessor, Address + offset, length);
     }
@@ -94,66 +98,71 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
         return SearchAsync(pattern, -1, cancellationToken);
     }
 
-    public async Task<IEnumerable<nuint>> SearchAsync(
+    public Task<IEnumerable<nuint>> SearchAsync(
         ReadOnlyMemory<byte?> pattern, int maxDegreeOfParallelism, CancellationToken cancellationToken = default)
     {
-        _ = !pattern.IsEmpty ? true : throw new ArgumentException(null, nameof(pattern));
-        _ = maxDegreeOfParallelism is > 0 or -1 ?
-            true : throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism));
+        Check.Argument(!pattern.IsEmpty, pattern);
+        Check.Range(maxDegreeOfParallelism is -1 or > 0, maxDegreeOfParallelism);
 
         var window = this;
-        var length = pattern.Length;
 
-        IEnumerable<long> EnumerateOffsets()
+        return SearchAsync();
+
+        async Task<IEnumerable<nuint>> SearchAsync()
         {
-            for (nuint i = 0; window.ContainsRange(i, (nuint)length); i++)
-                yield return (long)i;
-        }
+            var length = pattern.Length;
 
-        var offsets = new List<nuint>();
+            IEnumerable<long> EnumerateOffsets()
+            {
+                for (nuint i = 0; window.ContainsRange(i, (nuint)length); i++)
+                    yield return (long)i;
+            }
 
-        await Parallel
-            .ForEachAsync(
-                EnumerateOffsets(),
-                new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = maxDegreeOfParallelism,
-                    CancellationToken = cancellationToken,
-                },
-                (i, ct) =>
-                {
-                    ct.ThrowIfCancellationRequested();
+            var offsets = new List<nuint>();
 
-                    var offset = (nuint)i;
-                    var candidateSpan = length <= 256 ? stackalloc byte[length] : new byte[length];
-
-                    if (!window.TryRead(offset, candidateSpan))
-                        return default;
-
-                    var patternSpan = pattern.Span;
-                    var match = true;
-
-                    for (var j = 0; j < length; j++)
+            await Parallel
+                .ForEachAsync(
+                    EnumerateOffsets(),
+                    new ParallelOptions
                     {
-                        var b = Unsafe.Add(ref MemoryMarshal.GetReference(patternSpan), j);
+                        MaxDegreeOfParallelism = maxDegreeOfParallelism,
+                        CancellationToken = cancellationToken,
+                    },
+                    (i, ct) =>
+                    {
+                        ct.ThrowIfCancellationRequested();
 
-                        if (b != null && Unsafe.Add(ref MemoryMarshal.GetReference(candidateSpan), j) != b)
+                        var offset = (nuint)i;
+                        var candidateSpan = length <= 256 ? stackalloc byte[length] : new byte[length];
+
+                        if (!window.TryRead(offset, candidateSpan))
+                            return default;
+
+                        var patternSpan = pattern.Span;
+                        var match = true;
+
+                        for (var j = 0; j < length; j++)
                         {
-                            match = false;
+                            var b = Unsafe.Add(ref MemoryMarshal.GetReference(patternSpan), j);
 
-                            break;
+                            if (b != null && Unsafe.Add(ref MemoryMarshal.GetReference(candidateSpan), j) != b)
+                            {
+                                match = false;
+
+                                break;
+                            }
                         }
-                    }
 
-                    if (match)
-                        lock (offsets)
-                            offsets.Add(offset);
+                        if (match)
+                            lock (offsets)
+                                offsets.Add(offset);
 
-                    return default;
-                })
-            .ConfigureAwait(false);
+                        return default;
+                    })
+                .ConfigureAwait(false);
 
-        return offsets;
+            return offsets;
+        }
     }
 
     public bool TryRead(nuint offset, Span<byte> buffer)
@@ -166,27 +175,28 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
         return true;
     }
 
-    public unsafe bool TryRead<T>(nuint offset, out T value)
+    public bool TryRead<T>(nuint offset, out T value)
         where T : unmanaged
     {
         value = default;
 
-        return TryRead(offset, MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref value, 1)));
+        return TryRead(offset, MemoryMarshal.AsBytes(new Span<T>(ref value)));
     }
 
     public void Read(nuint offset, Span<byte> buffer)
     {
-        if (!TryRead(offset, buffer))
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(TryRead(offset, buffer), offset);
     }
 
-    public unsafe T Read<T>(nuint offset)
+    public T Read<T>(nuint offset)
         where T : unmanaged
     {
-        return TryRead<T>(offset, out var value) ? value : throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(TryRead<T>(offset, out var value), offset);
+
+        return value;
     }
 
-    public bool TryWrite(nuint offset, ReadOnlySpan<byte> buffer)
+    public bool TryWrite(nuint offset, scoped ReadOnlySpan<byte> buffer)
     {
         if (!ContainsRange(offset, (nuint)buffer.Length))
             return false;
@@ -199,20 +209,18 @@ public readonly struct MemoryWindow : IEquatable<MemoryWindow>
     public bool TryWrite<T>(nuint offset, T value)
         where T : unmanaged
     {
-        return TryWrite(offset, MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref value, 1)));
+        return TryWrite(offset, MemoryMarshal.AsBytes(new ReadOnlySpan<T>(value)));
     }
 
-    public void Write(nuint offset, ReadOnlySpan<byte> buffer)
+    public void Write(nuint offset, scoped ReadOnlySpan<byte> buffer)
     {
-        if (!TryWrite(offset, buffer))
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(TryWrite(offset, buffer), offset);
     }
 
-    public unsafe void Write<T>(nuint offset, T value)
+    public void Write<T>(nuint offset, T value)
         where T : unmanaged
     {
-        if (!TryWrite(offset, value))
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        Check.Range(TryWrite(offset, value), offset);
     }
 
     public bool Equals(MemoryWindow other)

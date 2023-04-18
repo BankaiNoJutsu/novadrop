@@ -5,23 +5,20 @@ namespace Vezel.Novadrop.Data.Serialization.Regions;
 internal sealed class DataCenterRegion<T>
     where T : unmanaged, IDataCenterItem
 {
-    public List<T> Elements { get; } = new List<T>(ushort.MaxValue);
+    public List<T> Elements { get; } = new(ushort.MaxValue);
 
+    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
     public async ValueTask ReadAsync(bool strict, StreamBinaryReader reader, CancellationToken cancellationToken)
     {
         var capacity = await reader.ReadInt32Async(cancellationToken).ConfigureAwait(false);
         var count = await reader.ReadInt32Async(cancellationToken).ConfigureAwait(false);
 
-        if (count < 0)
-            throw new InvalidDataException($"Region length {count} is negative.");
+        Check.Data(count >= 0, $"Region length {count} is negative.");
 
         if (strict)
         {
-            if (capacity < 0)
-                throw new InvalidDataException($"Region capacity {capacity} is negative.");
-
-            if (count > capacity)
-                throw new InvalidDataException($"Region length {count} is greater than region capacity {capacity}.");
+            Check.Data(capacity >= 0, $"Region capacity {capacity} is negative.");
+            Check.Data(count <= capacity, $"Region length {count} is greater than region capacity {capacity}.");
         }
 
         var length = Unsafe.SizeOf<T>() * capacity;
@@ -52,6 +49,7 @@ internal sealed class DataCenterRegion<T>
         }
     }
 
+    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
     public async ValueTask WriteAsync(StreamBinaryWriter writer, CancellationToken cancellationToken)
     {
         var count = Elements.Count;
@@ -91,9 +89,9 @@ internal sealed class DataCenterRegion<T>
 
     public T GetElement(int index)
     {
-        return index < Elements.Count
-            ? Elements[index]
-            : throw new InvalidDataException($"Region element index {index} is out of bounds (0..{Elements.Count}).");
+        Check.Data(index < Elements.Count, $"Region element index {index} is out of bounds (0..{Elements.Count}).");
+
+        return Elements[index];
     }
 
     public void SetElement(int index, T value)

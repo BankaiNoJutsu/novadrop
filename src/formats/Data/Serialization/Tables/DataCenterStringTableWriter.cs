@@ -21,6 +21,7 @@ internal sealed class DataCenterStringTableWriter
         _limit = limit;
     }
 
+    [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
     public async ValueTask WriteAsync(StreamBinaryWriter writer, CancellationToken cancellationToken)
     {
         await _data.WriteAsync(writer, cancellationToken).ConfigureAwait(false);
@@ -37,9 +38,9 @@ internal sealed class DataCenterStringTableWriter
         if (!_cache.TryGetValue(value, out var raw))
         {
             // The name table is accessed with one-based 16-bit indexes rather than full addresses.
-            if (_limit && _addresses.Elements.Count == ushort.MaxValue)
-                throw new InvalidOperationException(
-                    $"String address table is full ({_addresses.Elements.Count} elements).");
+            Check.Operation(
+                !_limit || _addresses.Elements.Count != ushort.MaxValue,
+                $"String address table is full ({_addresses.Elements.Count} elements).");
 
             var max = DataCenterAddress.MaxValue;
             var segIdx = 0;
@@ -64,10 +65,9 @@ internal sealed class DataCenterStringTableWriter
             {
                 segIdx = _data.Segments.Count;
 
-                if (segIdx > max.SegmentIndex)
-                    throw new InvalidOperationException($"String table is full ({segIdx} segments).");
+                Check.Operation(segIdx <= max.SegmentIndex, $"String table is full ({segIdx} segments).");
 
-                segment = new DataCenterRegion<DataCenterRawChar>();
+                segment = new();
 
                 _data.Segments.Add(segment);
             }
@@ -90,7 +90,7 @@ internal sealed class DataCenterStringTableWriter
 
             var hash = DataCenterHash.ComputeStringHash(value);
 
-            raw = new DataCenterRawString
+            raw = new()
             {
                 Hash = hash,
                 Length = value.Length + 1,
@@ -98,7 +98,7 @@ internal sealed class DataCenterStringTableWriter
                 Address = addr,
             };
 
-            _strings.Segments[(int)((hash ^ hash >> 16) % (uint)_strings.Segments.Length)].Elements.Add(raw);
+            _strings.Segments[(int)((hash ^ hash >> 16) % (uint)_strings.Segments.Count)].Elements.Add(raw);
 
             _cache.Add(value, raw);
         }

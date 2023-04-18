@@ -24,9 +24,9 @@ public sealed class DataCenterLoadOptions
         };
     }
 
-    public DataCenterLoadOptions WithKey(ReadOnlySpan<byte> key)
+    public DataCenterLoadOptions WithKey(scoped ReadOnlySpan<byte> key)
     {
-        _ = key.Length == DataCenter.LatestKey.Length ? true : throw new ArgumentException(null, nameof(key));
+        Check.Argument(key.Length == DataCenter.LatestKey.Length, nameof(key));
 
         var options = Clone();
 
@@ -35,9 +35,9 @@ public sealed class DataCenterLoadOptions
         return options;
     }
 
-    public DataCenterLoadOptions WithIV(ReadOnlySpan<byte> iv)
+    public DataCenterLoadOptions WithIV(scoped ReadOnlySpan<byte> iv)
     {
-        _ = iv.Length == DataCenter.LatestIV.Length ? true : throw new ArgumentException(null, nameof(iv));
+        Check.Argument(iv.Length == DataCenter.LatestIV.Length, nameof(iv));
 
         var options = Clone();
 
@@ -57,7 +57,7 @@ public sealed class DataCenterLoadOptions
 
     public DataCenterLoadOptions WithLoaderMode(DataCenterLoaderMode mode)
     {
-        _ = Enum.IsDefined(mode) ? true : throw new ArgumentOutOfRangeException(nameof(mode));
+        Check.Enum(mode);
 
         var options = Clone();
 
@@ -68,7 +68,7 @@ public sealed class DataCenterLoadOptions
 
     public DataCenterLoadOptions WithMutability(DataCenterMutability mutability)
     {
-        _ = Enum.IsDefined(mutability) ? true : throw new ArgumentOutOfRangeException(nameof(mutability));
+        Check.Enum(mutability);
 
         var options = Clone();
 

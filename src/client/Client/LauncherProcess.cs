@@ -1,6 +1,6 @@
 namespace Vezel.Novadrop.Client;
 
-public sealed class LauncherProcess : GameProcess
+public sealed partial class LauncherProcess : GameProcess
 {
     // Represents a Tl.exe process from the perspective of a launcher.exe-compatible process.
 
@@ -16,15 +16,11 @@ public sealed class LauncherProcess : GameProcess
 
     public LauncherProcessOptions Options { get; }
 
-    private static readonly Regex _gameEvent = new(@"^gameEvent\((\d+)\)$");
-
-    private static readonly Regex _endPopup = new(@"^endPopup\((\d+)\)$");
-
-    private static readonly Regex _getWebLinkUrl = new(@"^getWebLinkUrl\((\d+),(.*)\)$");
+    private static readonly CultureInfo _culture = CultureInfo.InvariantCulture;
 
     public LauncherProcess(LauncherProcessOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Check.Null(options);
 
         Options = options;
     }
@@ -41,19 +37,18 @@ public sealed class LauncherProcess : GameProcess
     }
 
     protected override (nuint Id, ReadOnlyMemory<byte> Payload)? HandleWindowMessage(
-        nuint id, ReadOnlySpan<byte> payload)
+        nuint id, scoped ReadOnlySpan<byte> payload)
     {
-        var opts = Options;
         var utf8 = Encoding.UTF8;
 
         string? HandleGameEventOrExit(string value)
         {
             // csPopup(), endPopup(%d), gameEvent(%d), promoPopup(%d)
 
-            if (_gameEvent.Match(value) is { Success: true } m1)
-                GameEventOccurred?.Invoke((GameEvent)int.Parse(m1.Groups[1].ValueSpan));
-            else if (_endPopup.Match(value) is { Success: true } m2)
-                GameExited?.Invoke((int)uint.Parse(m2.Groups[1].ValueSpan));
+            if (GameEventRegex().Match(value) is { Success: true } m1)
+                GameEventOccurred?.Invoke((GameEvent)int.Parse(m1.Groups[1].Value, _culture));
+            else if (EndPopupRegex().Match(value) is { Success: true } m2)
+                GameExited?.Invoke((int)uint.Parse(m2.Groups[1].Value, _culture));
 
             return null;
         }
@@ -62,7 +57,7 @@ public sealed class LauncherProcess : GameProcess
         {
             ServerListUriRequested?.Invoke();
 
-            return opts.ServerListUri.AbsoluteUri + '\0';
+            return Options.ServerListUri.AbsoluteUri + '\0';
         }
 
         string HandleAuthenticationInfoRequest()
@@ -71,26 +66,27 @@ public sealed class LauncherProcess : GameProcess
 
             return JsonSerializer.Serialize(
                 new LauncherAuthenticationInfo(
-                    opts.AccountName,
-                    opts.SessionTicket,
-                    opts.Servers.Values
-                        .Select(s => new LauncherAuthenticationInfo.ServerCharacters(s.Id, s.Characters)),
-                    opts.LastServerId),
+                    Options.AccountName,
+                    Options.SessionTicket,
+                    Options.Servers.Values.Select(
+                        s => new LauncherAuthenticationInfo.ServerCharacters(s.Id, s.Characters)),
+                    Options.LastServerId),
                 LauncherJsonContext.Default.LauncherAuthenticationInfo) + '\0';
         }
 
         string HandleWebUriRequest(Match match)
         {
-            var id = int.Parse(match.Groups[1].ValueSpan);
+            var id = int.Parse(match.Groups[1].Value, _culture);
             var args = match.Groups[2].Value.Split(',');
 
             WebUriRequested?.Invoke(args, id);
 
-            return Options.WebUriProvider?.Invoke(id, args) is Uri uri
-                ? uri.IsAbsoluteUri
-                    ? uri.AbsoluteUri
-                    : throw new InvalidOperationException()
-                : string.Empty;
+            if (Options.WebUriProvider?.Invoke(id, args) is not Uri uri)
+                return string.Empty;
+
+            Check.Operation(uri.IsAbsoluteUri);
+
+            return uri.AbsoluteUri;
         }
 
         // Note that the message ID increments on every sent message for slsurl, gamestr, ticket, last_svr, and
@@ -101,10 +97,19 @@ public sealed class LauncherProcess : GameProcess
             (0x0, var value) => HandleGameEventOrExit(value),
             (_, "slsurl\0") => HandleServerListUriRequest(),
             (_, "gamestr\0" or "ticket\0" or "last_svr\0" or "char_cnt\0") => HandleAuthenticationInfoRequest(),
-            (_, var value) when _getWebLinkUrl.Match(value) is { Success: true } m => HandleWebUriRequest(m),
+            (_, var value) when GetWebLinkUrlRegex().Match(value) is { Success: true } m => HandleWebUriRequest(m),
             _ => null,
         };
 
         return replyPayload != null ? (id, utf8.GetBytes(replyPayload)) : null;
     }
+
+    [GeneratedRegex("^gameEvent\\((\\d+)\\)$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    private static partial Regex GameEventRegex();
+
+    [GeneratedRegex("^endPopup\\((\\d+)\\)$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    private static partial Regex EndPopupRegex();
+
+    [GeneratedRegex("^getWebLinkUrl\\((\\d+),(.*)\\)$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+    private static partial Regex GetWebLinkUrlRegex();
 }

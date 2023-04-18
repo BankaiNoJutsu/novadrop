@@ -25,7 +25,7 @@ public sealed class Xor256 : SymmetricAlgorithm
             // Nothing to clean up.
         }
 
-        public bool Transform(ReadOnlySpan<byte> source, Span<byte> destination, out int written)
+        public bool Transform(scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, out int written)
         {
             if (destination.Length < source.Length)
             {
@@ -47,16 +47,12 @@ public sealed class Xor256 : SymmetricAlgorithm
         public int TransformBlock(
             byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            ArgumentNullException.ThrowIfNull(inputBuffer);
-            _ = inputOffset >= 0 && inputOffset <= inputBuffer.Length ?
-                true : throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            _ = inputCount >= 0 && inputCount <= inputBuffer.Length - inputOffset ?
-                true : throw new ArgumentOutOfRangeException(nameof(inputCount));
-            ArgumentNullException.ThrowIfNull(outputBuffer);
-            _ = outputOffset <= outputBuffer.Length ?
-                true : throw new ArgumentOutOfRangeException(nameof(outputOffset));
-            _ = inputCount <= outputBuffer.Length - outputOffset ?
-                true : throw new ArgumentOutOfRangeException(nameof(outputOffset));
+            Check.Null(inputBuffer);
+            Check.Range(inputOffset >= 0 && inputOffset <= inputBuffer.Length, inputOffset);
+            Check.Range(inputCount >= 0 && inputCount <= inputBuffer.Length - inputOffset, inputCount);
+            Check.Null(outputBuffer);
+            Check.Range(
+                outputOffset <= outputBuffer.Length && inputCount <= outputBuffer.Length - outputOffset, outputOffset);
 
             _ = Transform(
                 inputBuffer.AsSpan(inputOffset, inputCount), outputBuffer.AsSpan(outputOffset), out var written);
@@ -66,11 +62,9 @@ public sealed class Xor256 : SymmetricAlgorithm
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            ArgumentNullException.ThrowIfNull(inputBuffer);
-            _ = inputOffset >= 0 && inputOffset <= inputBuffer.Length ?
-                true : throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            _ = inputCount >= 0 && inputCount <= inputBuffer.Length - inputOffset ?
-                true : throw new ArgumentOutOfRangeException(nameof(inputCount));
+            Check.Null(inputBuffer);
+            Check.Range(inputOffset >= 0 && inputOffset <= inputBuffer.Length, inputOffset);
+            Check.Range(inputCount >= 0 && inputCount <= inputBuffer.Length - inputOffset, inputCount);
 
             var arr = GC.AllocateUninitializedArray<byte>(inputCount);
 
@@ -88,7 +82,7 @@ public sealed class Xor256 : SymmetricAlgorithm
         get => base.FeedbackSize;
         set
         {
-            _ = value == 0 ? true : throw new CryptographicException();
+            Check.Crypto(value == 0);
 
             FeedbackSizeValue = value;
         }
@@ -99,7 +93,7 @@ public sealed class Xor256 : SymmetricAlgorithm
         get => base.Mode;
         set
         {
-            _ = value == CipherMode.ECB ? true : throw new CryptographicException();
+            Check.Crypto(value == CipherMode.ECB);
 
             ModeValue = value;
         }
@@ -111,7 +105,7 @@ public sealed class Xor256 : SymmetricAlgorithm
         set
         {
             // TODO: Support padding?
-            _ = value == PaddingMode.None ? true : throw new CryptographicException();
+            Check.Crypto(value == PaddingMode.None);
 
             PaddingValue = value;
         }
@@ -123,8 +117,14 @@ public sealed class Xor256 : SymmetricAlgorithm
         PaddingValue = PaddingMode.None;
         KeySizeValue = KeyLength * 8;
         BlockSizeValue = KeySizeValue;
-        LegalKeySizesValue = new[] { new KeySizes(KeySizeValue, KeySizeValue, 0) };
-        LegalBlockSizesValue = new[] { new KeySizes(BlockSizeValue, BlockSizeValue, 0) };
+        LegalKeySizesValue = new[]
+        {
+            new KeySizes(KeySizeValue, KeySizeValue, 0),
+        };
+        LegalBlockSizesValue = new[]
+        {
+            new KeySizes(BlockSizeValue, BlockSizeValue, 0),
+        };
     }
 
     public static new Xor256 Create()
@@ -156,7 +156,7 @@ public sealed class Xor256 : SymmetricAlgorithm
     protected override bool TryDecryptEcbCore(
         ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
     {
-        _ = paddingMode == PaddingMode.None ? true : throw new ArgumentOutOfRangeException(nameof(paddingMode));
+        Check.Range(paddingMode == PaddingMode.None, paddingMode);
 
         using var decryptor = Unsafe.As<Xor256CryptoTransform>(CreateDecryptor());
 
@@ -166,7 +166,7 @@ public sealed class Xor256 : SymmetricAlgorithm
     protected override bool TryEncryptEcbCore(
         ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten)
     {
-        _ = paddingMode == PaddingMode.None ? true : throw new ArgumentOutOfRangeException(nameof(paddingMode));
+        Check.Range(paddingMode == PaddingMode.None, paddingMode);
 
         using var encryptor = Unsafe.As<Xor256CryptoTransform>(CreateEncryptor());
 

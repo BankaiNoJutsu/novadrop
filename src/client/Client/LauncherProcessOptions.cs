@@ -10,12 +10,12 @@ public sealed class LauncherProcessOptions
 
     public Uri ServerListUri { get; private set; } = null!;
 
-    public IReadOnlyDictionary<int, LauncherServerInfo> Servers { get; private set; } =
-        new Dictionary<int, LauncherServerInfo>();
+    public ImmutableSortedDictionary<int, LauncherServerInfo> Servers { get; private set; } =
+        ImmutableSortedDictionary<int, LauncherServerInfo>.Empty;
 
     public int LastServerId { get; private set; }
 
-    public Func<int, string[], Uri>? WebUriProvider { get; private set; }
+    public Func<int, ReadOnlyMemory<string>, Uri>? WebUriProvider { get; private set; }
 
     private LauncherProcessOptions()
     {
@@ -23,11 +23,11 @@ public sealed class LauncherProcessOptions
 
     public LauncherProcessOptions(string fileName, string accountName, string sessionTicket, Uri serverListUri)
     {
-        ArgumentNullException.ThrowIfNull(fileName);
-        ArgumentNullException.ThrowIfNull(accountName);
-        ArgumentNullException.ThrowIfNull(sessionTicket);
-        ArgumentNullException.ThrowIfNull(serverListUri);
-        _ = serverListUri.IsAbsoluteUri ? true : throw new ArgumentException(null, nameof(serverListUri));
+        Check.Null(fileName);
+        Check.Null(accountName);
+        Check.Null(sessionTicket);
+        Check.Null(serverListUri);
+        Check.Argument(serverListUri.IsAbsoluteUri, serverListUri);
 
         FileName = fileName;
         AccountName = accountName;
@@ -51,7 +51,7 @@ public sealed class LauncherProcessOptions
 
     public LauncherProcessOptions WithFileName(string fileName)
     {
-        ArgumentNullException.ThrowIfNull(fileName);
+        Check.Null(fileName);
 
         var options = Clone();
 
@@ -62,7 +62,7 @@ public sealed class LauncherProcessOptions
 
     public LauncherProcessOptions WithAccountName(string accountName)
     {
-        ArgumentNullException.ThrowIfNull(accountName);
+        Check.Null(accountName);
 
         var options = Clone();
 
@@ -73,7 +73,7 @@ public sealed class LauncherProcessOptions
 
     public LauncherProcessOptions WithSessionTicket(string sessionTicket)
     {
-        ArgumentNullException.ThrowIfNull(sessionTicket);
+        Check.Null(sessionTicket);
 
         var options = Clone();
 
@@ -84,8 +84,8 @@ public sealed class LauncherProcessOptions
 
     public LauncherProcessOptions WithServerListUri(Uri serverListUri)
     {
-        ArgumentNullException.ThrowIfNull(serverListUri);
-        _ = serverListUri.IsAbsoluteUri ? true : throw new ArgumentException(null, nameof(serverListUri));
+        Check.Null(serverListUri);
+        Check.Argument(serverListUri.IsAbsoluteUri, serverListUri);
 
         var options = Clone();
 
@@ -94,22 +94,82 @@ public sealed class LauncherProcessOptions
         return options;
     }
 
-    [SuppressMessage("", "CA1851")]
+    public LauncherProcessOptions WithServers(params LauncherServerInfo[] servers)
+    {
+        return WithServers(servers.AsEnumerable());
+    }
+
     public LauncherProcessOptions WithServers(IEnumerable<LauncherServerInfo> servers)
     {
-        ArgumentNullException.ThrowIfNull(servers);
-        _ = servers.All(s => s != null) ? true : throw new ArgumentException(null, nameof(servers));
+        Check.Null(servers);
+        Check.All(servers, static srv => srv != null);
 
         var options = Clone();
 
-        options.Servers = servers.ToImmutableDictionary(s => s.Id);
+        options.Servers = servers.ToImmutableSortedDictionary(srv => srv.Id, srv => srv);
 
         return options;
     }
 
+    public LauncherProcessOptions AddServer(LauncherServerInfo server)
+    {
+        Check.Null(server);
+
+        var options = Clone();
+
+        options.Servers = Servers.Add(server.Id, server);
+
+        return options;
+    }
+
+    public LauncherProcessOptions AddServers(params LauncherServerInfo[] servers)
+    {
+        return AddServers(servers.AsEnumerable());
+    }
+
+    public LauncherProcessOptions AddServers(IEnumerable<LauncherServerInfo> servers)
+    {
+        Check.Null(servers);
+        Check.All(servers, static srv => srv != null);
+
+        var options = Clone();
+
+        options.Servers = Servers.AddRange(servers.Select(srv => KeyValuePair.Create(srv.Id, srv)));
+
+        return options;
+    }
+
+    public LauncherProcessOptions RemoveServer(int id)
+    {
+        var options = Clone();
+
+        options.Servers = Servers.Remove(id);
+
+        return options;
+    }
+
+    public LauncherProcessOptions RemoveServers(params int[] ids)
+    {
+        return RemoveServers(ids.AsEnumerable());
+    }
+
+    public LauncherProcessOptions RemoveServers(IEnumerable<int> ids)
+    {
+        var options = Clone();
+
+        options.Servers = Servers.RemoveRange(ids);
+
+        return options;
+    }
+
+    public LauncherProcessOptions ClearServers()
+    {
+        return WithServers();
+    }
+
     public LauncherProcessOptions WithLastServerId(int lastServerId)
     {
-        _ = lastServerId > 0 ? true : throw new ArgumentOutOfRangeException(nameof(lastServerId));
+        Check.Range(lastServerId > 0, lastServerId);
 
         var options = Clone();
 
@@ -118,9 +178,9 @@ public sealed class LauncherProcessOptions
         return options;
     }
 
-    public LauncherProcessOptions WithWebUriProvider(Func<int, string[], Uri>? webUriProvider)
+    public LauncherProcessOptions WithWebUriProvider(Func<int, ReadOnlyMemory<string>, Uri>? webUriProvider)
     {
-        ArgumentNullException.ThrowIfNull(webUriProvider);
+        Check.Null(webUriProvider);
 
         var options = Clone();
 

@@ -4,49 +4,63 @@ public static class DataCenterExtensions
 {
     public static IEnumerable<DataCenterNode> Ancestors(this DataCenterNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
+        Check.Null(node);
+
+        return node.Parent?.AncestorsAndSelf() ?? Array.Empty<DataCenterNode>();
+    }
+
+    public static IEnumerable<DataCenterNode> AncestorsAndSelf(this DataCenterNode node)
+    {
+        Check.Null(node);
 
         var current = node;
 
-        while ((current = current.Parent) != null)
+        do
+        {
             yield return current;
+
+            current = current.Parent;
+        }
+        while (current != null);
     }
 
     public static IEnumerable<DataCenterNode> Siblings(this DataCenterNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
+        return node.SiblingsAndSelf().Where(n => n != node);
+    }
 
-        var parent = node.Parent;
+    public static IEnumerable<DataCenterNode> SiblingsAndSelf(this DataCenterNode node)
+    {
+        Check.Null(node);
 
-        if (parent == null)
-            yield break;
-
-        foreach (var elem in parent.Children.Where(x => x != node))
-            yield return elem;
+        foreach (var sibling in node.Parent?.Children ?? Array.Empty<DataCenterNode>())
+            yield return sibling;
     }
 
     public static IEnumerable<DataCenterNode> Descendants(this DataCenterNode node)
     {
-        ArgumentNullException.ThrowIfNull(node);
+        return node.DescendantsAndSelf().Where(n => n != node);
+    }
 
-        var work = new Queue<DataCenterNode>();
+    public static IEnumerable<DataCenterNode> DescendantsAndSelf(this DataCenterNode node)
+    {
+        Check.Null(node);
 
-        work.Enqueue(node);
+        var work = new Stack<DataCenterNode>();
 
-        while (work.Count != 0)
+        work.Push(node);
+
+        do
         {
-            var current = work.Dequeue();
+            var current = work.Pop();
 
-            if (!current.HasChildren)
-                continue;
+            yield return current;
 
-            foreach (var elem in current.Children)
-            {
-                yield return elem;
-
-                work.Enqueue(elem);
-            }
+            if (current.HasChildren)
+                foreach (var child in current.Children.Reverse())
+                    work.Push(child);
         }
+        while (work.Count != 0);
     }
 
     public static int ToInt32(this DataCenterValue value)
@@ -91,7 +105,7 @@ public static class DataCenterExtensions
             DataCenterTypeCode.String => value.UnsafeAsString switch
             {
                 var s when bool.TryParse(s, out var b) => b,
-                var s => s.Trim() switch // TODO: AsSpan to avoid the possible allocation in .NET 7.
+                var s => s.AsSpan().Trim() switch
                 {
                     "0" => false,
                     "1" => true,

@@ -21,7 +21,7 @@ internal sealed class LazyMutableDataCenterReader : DataCenterReader
     {
         LazyMutableDataCenterNode node = null!;
 
-        return node = new LazyMutableDataCenterNode(
+        return node = new(
             parent,
             name,
             value,
@@ -31,11 +31,12 @@ internal sealed class LazyMutableDataCenterReader : DataCenterReader
                 var attributes = new OrderedDictionary<string, DataCenterValue>(
                     raw.AttributeCount - (value != null ? 1 : 0));
 
-                ReadAttributes(raw, attributes, static (attributes, name, value) =>
-                {
-                    if (!attributes.TryAdd(name, value))
-                        throw new InvalidDataException($"Attribute named '{name}' was already recorded earlier.");
-                });
+                ReadAttributes(
+                    raw,
+                    attributes,
+                    static (attributes, name, value) =>
+                        Check.Data(
+                            attributes.TryAdd(name, value), $"Attribute named '{name}' was already recorded earlier."));
 
                 return attributes;
             },

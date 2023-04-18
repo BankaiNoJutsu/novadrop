@@ -1,9 +1,4 @@
 <Project>
-    <PropertyGroup Condition="'$(DebugSymbols)' == 'true'">
-        <DebugType>embedded</DebugType>
-        <EmbedAllSources>true</EmbedAllSources>
-    </PropertyGroup>
-
     <ItemGroup>
         <Using Include="Microsoft.Win32.SafeHandles" />
         <Using Include="System.Buffers" />
@@ -19,6 +14,7 @@
         <Using Include="System.IO.Compression" />
         <Using Include="System.Net" />
         <Using Include="System.Net.Sockets" />
+        <Using Include="System.Numerics" />
         <Using Include="System.Reflection" />
         <Using Include="System.Runtime.CompilerServices" />
         <Using Include="System.Runtime.InteropServices" />
@@ -41,9 +37,15 @@
             <PropertyGroup>
                 <ApplicationIcon>$(MSBuildThisFileDirectory)novadrop.ico</ApplicationIcon>
                 <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-                <IsTrimmable Condition="'$(OutputType)' == 'Library'">>true</IsTrimmable>
                 <PackageIcon>novadrop.png</PackageIcon>
                 <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
+            </PropertyGroup>
+
+            <PropertyGroup Condition="'$(OutputType)' == 'Library'">
+                <EnableAotAnalyzer>true</EnableAotAnalyzer>
+                <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+                <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+                <IsTrimmable>true</IsTrimmable>
             </PropertyGroup>
 
             <ItemGroup>
@@ -55,21 +57,10 @@
         </When>
     </Choose>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub"
-                          PrivateAssets="all" />
-        <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers"
-                          PrivateAssets="all" />
-        <PackageReference Include="Nerdbank.GitVersioning"
-                          PrivateAssets="all" />
-        <PackageReference Include="StyleCop.Analyzers"
-                          PrivateAssets="all" />
-    </ItemGroup>
-
     <Target Name="_SetReleaseNotes"
             DependsOnTargets="GetBuildVersion"
             BeforeTargets="GenerateNuspec"
-            Condition="'$(IsPackable)' == 'true'">
+            Condition="'$(IsPackable)' == 'true' and '$(PublicRelease)' == 'true'">
         <PropertyGroup>
             <PackageReleaseNotes>https://github.com/vezel-dev/novadrop/releases/tag/v$(Version)</PackageReleaseNotes>
         </PropertyGroup>
